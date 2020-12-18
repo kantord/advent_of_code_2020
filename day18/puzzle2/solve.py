@@ -73,9 +73,9 @@ assert parse_number("5") == (5, "")
 def alt_(a, b):
     def p(x):
         try:
-            return a(x)
+            return a()(x)
         except:
-            return b(x)
+            return b()(x)
 
     return p
 
@@ -102,7 +102,8 @@ def parse_parentheses(x):
     return parse_multiplication_expression(parsed)[0], "".join(unparsed)
 
 
-parse_parentheses_or_number = alt(parse_parentheses, parse_number)
+parse_parentheses_or_number = alt(
+    lambda: parse_parentheses, lambda: parse_number)
 
 
 def parse_addition(x):
@@ -128,9 +129,10 @@ def parse_multiplication(x):
     return lhs + rhs, rem
 
 
-parse_addition_expression = alt(parse_addition, parse_parentheses_or_number)
+parse_addition_expression = alt(
+    lambda: parse_addition, lambda: parse_parentheses_or_number)
 parse_multiplication_expression = alt(
-    parse_multiplication, parse_addition_expression)
+    lambda: parse_multiplication, lambda: parse_addition_expression)
 
 
 def test(x, y):
