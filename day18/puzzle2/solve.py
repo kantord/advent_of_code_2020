@@ -102,15 +102,6 @@ def parse_parentheses(x):
     return parse_multiplication_expression(parsed)[0], "".join(unparsed)
 
 
-# def parse_parentheses_or_number(x):
-    # magicprint('🦵 parse_parentheses_or_number', x)
-    # try:
-    # return parse_parentheses(x)
-    # except:
-    # magicprint("trying to return a number instead of parse_parentheses")
-    # return parse_number(x)
-
-
 parse_parentheses_or_number = alt(parse_parentheses, parse_number)
 
 
@@ -137,24 +128,7 @@ def parse_multiplication(x):
     return lhs + rhs, rem
 
 
-# def parse_addition_expression(x):
-    # magicprint('🍍 parse_addition_expression', x)
-    # try:
-    # return parse_addition(x)
-    # except:
-    # magicprint(
-    # "trying to return parse_parentheses_or_number instead of addition")
-    # return parse_parentheses_or_number(x)
-
 parse_addition_expression = alt(parse_addition, parse_parentheses_or_number)
-
-
-# def parse_multiplication_expression(x):
-# try:
-# return parse_multiplication(x)
-# except:
-# return parse_addition_expression(x)
-
 parse_multiplication_expression = alt(
     parse_multiplication, parse_addition_expression)
 
