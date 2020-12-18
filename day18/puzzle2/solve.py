@@ -1,5 +1,6 @@
 import inspect
 import functools
+import operator
 
 with open('./input') as input_file:
     raw_input = [
@@ -9,60 +10,12 @@ with open('./input') as input_file:
 
 
 def magicprint(*t):
-    print(" "*4*len(inspect.stack()), *t)
-
-
-# def evaluate(expression):
-    # magicprint("🍏", "".join(expression))
-    # expression = list(expression)
-    # operator = None
-    # inside_parentheses = []
-    # parenthesis_depth = 0
-    # first_item = expression.pop(0)
-    # if first_item == "(":
-    # parenthesis_depth = 1
-    # else:
-    # value = int(first_item)
-
-    # while expression:
-    # if parenthesis_depth:
-    # inside_parentheses.append(expression.pop(0))
-    # next_ = expression.pop(0)
-    # if next_ == "(":
-    # parenthesis_depth += 1
-    # if next_ == ")":
-    # parenthesis_depth -= 1
-    # inside_parentheses.append(next_)
-
-    # if parenthesis_depth == 0:
-    # if operator == '+':
-    # magicprint("value = ", value, "+",
-    # evaluate(inside_parentheses[0:-1]))
-    # value += evaluate(inside_parentheses[0:-1])
-    # if operator == '*':
-    # magicprint("value = ", value, "*",
-    # evaluate(inside_parentheses[0:-1]))
-    # value *= evaluate(inside_parentheses[0:-1])
-    # if operator == None:
-    # value = evaluate(inside_parentheses[0:-1])
-    # inside_parentheses = []
-    # else:
-    # operator = expression.pop(0)
-    # right_hand_side = expression.pop(0)
-    # if right_hand_side == "(":
-    # parenthesis_depth += 1
-    # else:
-    # if operator == '+':
-    # value += int(right_hand_side)
-    # if operator == '*':
-    # value *= int(right_hand_side)
-
-    # magicprint("🍎", value)
-    # return value
+    return
+    print(">"*len(inspect.stack()), *t)
 
 
 def parse_number(x):
-    magicprint("💣 parse_number", x)
+    magicprint("number", x)
     return int(x[0]), x[1:]
 
 
@@ -71,62 +24,103 @@ assert parse_number("5") == (5, "")
 
 
 def alt_(a, b):
-    def p(x):
+
+    myname = "alt({})".format(", ".join(x.__name__ for x in [a, b]))
+
+    def alternative_parser(x):
+        magicprint(myname, x)
         try:
-            return a()(x)
-        except:
-            return b()(x)
+            return a(x)
+        except ValueError:
+            magicprint("alt: {} DISCARDED".format(b.__name__))
+            return b(x)
+
+    alternative_parser.__name__ = myname
+    return alternative_parser
+
+
+def alt(*ps):
+    ps = [p() for p in ps]
+    return functools.reduce(alt_, ps[1:], ps[0])
+
+
+def seq(f, *ps):
+    def p(x):
+        remainder = x
+        parsed = []
+
+        for p in ps:
+            values = p()(remainder)
+            try:
+                new_parsed, remainder = values
+                parsed.append(new_parsed)
+            except ValueError:
+                raise RuntimeError("This should not happend", repr(values))
+
+        return f(parsed, remainder)
 
     return p
 
 
-def alt(*ps):
-    return functools.reduce(alt_, ps[1:], ps[0])
+def parse_string(s):
+    myname = "string_parser({})".format(repr(s))
+
+    def string_parser(x):
+        magicprint(myname, x)
+        if x.startswith(s):
+            return s, x[len(s):]
+        else:
+            raise ValueError("")
+
+    string_parser.__name__ = myname
+    return string_parser
 
 
-def parse_parentheses(x):
-    if not x[0] == "(":
-        raise ValueError("")
-    depth = 1
-    parsed = ""
-    unparsed = list(x[1:])
-    while depth:
-        next_ = unparsed.pop(0)
-        if next_ == ")":
-            depth -= 1
-        if depth:
-            parsed += next_
-            if next_ == "(":
-                depth += 1
-
-    return parse_multiplication_expression(parsed)[0], "".join(unparsed)
+parse_parentheses = seq(lambda p, r: (p[1], r),
+                        lambda: parse_string("("),
+                        lambda: parse_multiplication_expression,
+                        lambda: parse_string(")")
+                        )
 
 
 parse_parentheses_or_number = alt(
     lambda: parse_parentheses, lambda: parse_number)
 
 
-def parse_addition(x):
-    magicprint("💩 parse_addition", x)
-    lhs, remainder = parse_parentheses_or_number(x)
-    op = remainder[0]
-    magicprint("🍫", lhs, remainder, op)
-    if op != "*":
-        raise ValueError()
-    rhs, rem = parse_multiplication_expression(remainder[1:])
+parse_addition = seq(
+    lambda p, r: (sum(p[i] for i in range(0, len(p), 2)), r),
+    lambda: parse_parentheses_or_number,
+    lambda: parse_string("+"),
+    lambda: alt(
+        lambda: parse_addition,
+        lambda: parse_parentheses_or_number,
+    ),
+)
 
-    return lhs * rhs, rem
+parse_multiplication = seq(
+    lambda p, r: (functools.reduce(
+        operator.mul, (p[i] for i in range(0, len(p), 2))), r),
+    lambda: parse_addition_expression,
+    lambda: parse_string("*"),
+    lambda: alt(
+        lambda: parse_multiplication,
+        lambda: parse_addition_expression
+    ),
+)
 
 
-def parse_multiplication(x):
-    magicprint('🍎parse_multiplication', x)
-    lhs, remainder = parse_addition_expression(x)
-    op = remainder[0]
-    if op != "+":
-        raise ValueError()
-    rhs, rem = parse_multiplication_expression(remainder[1:])
+# def parse_multiplication(x):
+# magicprint('🍎parse_multiplication', x)
+# lhs, remainder = parse_addition_expression(x)
+# try:
+# op = remainder[0]
+# except IndexError:
+# raise ValueError()
+# if op != "+":
+# raise ValueError()
+# rhs, rem = parse_multiplication_expression(remainder[1:])
 
-    return lhs + rhs, rem
+# return lhs + rhs, rem
 
 
 parse_addition_expression = alt(
@@ -136,11 +130,13 @@ parse_multiplication_expression = alt(
 
 
 def test(x, y):
-    assert parse_multiplication_expression(x)[0] == y, "expected: {}, value: {}, remainder: {}".format(
-        *map(repr, [y, *parse_multiplication_expression(x)])
-    )
+    result = parse_multiplication_expression(x)
+    magicprint("🍌" * 30, result)
+    assert result[0] == y, "expected: {}, value: {}, remainder: {}".format(
+        *map(repr, [y, *result]))
 
 
+print("🔥" * 30)
 test("(5)", 5)
 test("((5))", 5)
 test("((5))5", 5)
@@ -158,15 +154,13 @@ test("1+(2*3)+(4*(5+6))", (51))
 test("2*3+(4*5)", (46))
 test("8*3*5*4", 480)
 test("8*6+9", 480 // 4)
-magicprint("🍌" * 30)
 test("6+9*8", 480 // 4)
 test("8*6+9*4", 480)
 test("8*3+9+3*4", 480)
 
 test("5+(8*3+9+3*4)", 485)
-# assert parse_multiplication_expression("5+(8*3+9+3*4*3)")
-# 0] == (1445)
-# assert parse_multiplication_expression(
-# "5*9*(7*3*3+9*3+(8+6*4))")[0] == (669060)
-# assert parse_multiplication_expression(
-# "((2+4*9)*(6+9*8+6)+6)+2+4*2")[0] == (23340)
+test("5+(8*3+9+3*4*3)", 1445)
+test("5*9*(7*3*3+9*3+(8+6*4))", 669060)
+test("((2+4*9)*(6+9*8+6)+6)+2+4*2", 23340)
+
+print(sum(parse_multiplication_expression(x)[0] for x in raw_input))
