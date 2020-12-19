@@ -226,61 +226,68 @@ for i, rule in rules.items():
 
 # assert rules[0][0]("aa")[1] == ""
 
-# total_matching = 0
-# for x in messages.split('\n')[0:-1]:
-    # x = x.strip()
-    # try:
-    # _, r = rules[0][0](x)
-    # if not r:
-    # print(repr(x), "✅")
-    # total_matching += 1
-    # else:
-    # print(repr(x), "❌", repr(r))
-    # except ValueError as e:
-    # print(e)
-    # print(repr(x), "❌ (VE)")
-
-# print("Total matching", total_matching)
-
-my_rules = {}
-
-for rule in raw_rules.split('\n'):
-    ruleid, rule = rule.strip().split(': ')
-    my_rules[ruleid] = rule
-
-
-def get_matching_strings(rule):
-    # print("🍅", repr(rule))
-    if rule == '"a"':
-        yield "a"
-    elif rule == '"b"':
-        yield "b"
-    else:
-        if "|" in rule:
-            for variant in rule.split(' | '):
-                for x in get_matching_strings(variant):
-                    yield x
-        elif " " in rule:
-            xx = rule.split(' ')
-            for yy in get_matching_strings(" ".join(xx[1:])):
-                for xxx in get_matching_strings(xx[0]):
-                    yield xxx + yy
+total_matching = 0
+for x in messages.split('\n')[0:-1]:
+    x = x.strip()
+    try:
+        _, r = rules[0][0](x)
+        if not r:
+            print(repr(x), "✅")
+            total_matching += 1
         else:
-            for u in get_matching_strings(my_rules[rule]):
-                yield u
+            print(repr(x), "❌", repr(r))
+    except ValueError as e:
+        print(e)
+        print(repr(x), "❌ (VE)")
+
+print("Total matching", total_matching)
+
+# my_rules = {}
+
+# for rule in raw_rules.split('\n'):
+    # ruleid, rule = rule.strip().split(': ')
+    # my_rules[ruleid] = rule
+
+# msgs = set(messages.split("\n")[0:-2])
+
+# print(msgs)
+
+# max_length = max(len(x) for x in msgs)
 
 
-all_matching_strings = set(get_matching_strings(my_rules["0"]))
+# def get_matching_strings(rule):
+    # print("🍅", repr(rule))
+    # if rule == '"a"':
+        # yield "a"
+    # elif rule == '"b"':
+        # yield "b"
+    # else:
+        # if "|" in rule:
+            # for variant in rule.split(' | '):
+                # for x in get_matching_strings(variant):
+                    # yield x
+        # elif " " in rule:
+            # xx = rule.split(' ')
+            # for yy in get_matching_strings(" ".join(xx[1:])):
+                # if len(yy) >= max_length:
+                    # break
+                # for xxx in get_matching_strings(xx[0]):
+                    # if len(yy) + len(xxx) >= max_length:
+                        # continue
+                    # yield xxx + yy
+        # else:
+            # for u in get_matching_strings(my_rules[rule]):
+                # yield u
 
-print(all_matching_strings)
 
-msgs = set(messages.split("\n")[0:-2])
+# all_matching_strings = set(get_matching_strings(my_rules["0"]))
 
-print(msgs)
-
-matching_msg = msgs.intersection(all_matching_strings)
-
-print(matching_msg)
+# print(all_matching_strings)
 
 
-print("Total matching", len(matching_msg))
+# matching_msg = msgs.intersection(all_matching_strings)
+
+# print(matching_msg)
+
+
+# print("Total matching", len(matching_msg))
