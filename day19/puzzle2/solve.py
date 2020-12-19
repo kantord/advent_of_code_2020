@@ -135,7 +135,7 @@ rules = {}
 
 def rule_parser(rule_id):
     def p(x):
-        return rules[rule_id][0](x)
+        return rules[rule_id](x)
 
     print("😀", rule_id)
     p.__name__ == str(rule_id)
@@ -213,13 +213,38 @@ raw_rule_parser = alt(
 for raw_rule in raw_rules.split('\n'):
     raw_rule = raw_rule.strip()
     id_, rule_desc = raw_rule.split(': ')
-    print(rule_desc)
-    rules[int(id_)] = raw_rule_parser(rule_desc)
+    if " | " in rule_desc:
+        alts = rule_desc.split(" | ")
+        padsad = []
+        for asd in alts:
+            xx = asd.split(" ")
+            if len(xx) == 1:
+                padsad.append(lambda: simple_rule_parser)
+            else:
+                padsad.append(lambda: seq(
+                    lambda p, r: (p[0] + p[1], r),
+                    lambda: simple_rule_parser,
+                    lambda: parse_regexp(" "),
+                    lambda: simple_rule_parser,
+                ))
+        rules[int(id_)] = alt(*padsad)
+    elif " " in rule_desc:
+        lhs, rhs = rule_desc.split(" ")
+        rules[int(id_)] = seq(
+            lambda p, r: (p[0] + p[1], r),
+            lambda: rule_parser(int(lhs)),
+            lambda: parse_regexp(" "),
+            lambda: rule_parser(int(rhs)),
+        )
+    elif rule_desc[0] == '"':
+        rules[int(id_)] = parse_string(rule_desc[1])
+    else:
+        rules[int(id_)] = rule_parser(int(rule_desc))
 
 # print(rules)
 
-for i, rule in rules.items():
-    print("ℹ️", i, " => ", rule[0].__name__)
+# for i, rule in rules.items():
+    # print("ℹ️", i, " => ", rule[0].__name__)
 
 
 # print(sum(1 for x in messages[0:-1] if rules[0][0](x.strip())[1] == ""))
@@ -230,7 +255,7 @@ total_matching = 0
 for x in messages.split('\n')[0:-1]:
     x = x.strip()
     try:
-        _, r = rules[0][0](x)
+        _, r = rules[0](x)
         if not r:
             print(repr(x), "✅")
             total_matching += 1
@@ -245,8 +270,8 @@ print("Total matching", total_matching)
 # my_rules = {}
 
 # for rule in raw_rules.split('\n'):
-    # ruleid, rule = rule.strip().split(': ')
-    # my_rules[ruleid] = rule
+# ruleid, rule = rule.strip().split(': ')
+# my_rules[ruleid] = rule
 
 # msgs = set(messages.split("\n")[0:-2])
 
@@ -256,28 +281,28 @@ print("Total matching", total_matching)
 
 
 # def get_matching_strings(rule):
-    # print("🍅", repr(rule))
-    # if rule == '"a"':
-        # yield "a"
-    # elif rule == '"b"':
-        # yield "b"
-    # else:
-        # if "|" in rule:
-            # for variant in rule.split(' | '):
-                # for x in get_matching_strings(variant):
-                    # yield x
-        # elif " " in rule:
-            # xx = rule.split(' ')
-            # for yy in get_matching_strings(" ".join(xx[1:])):
-                # if len(yy) >= max_length:
-                    # break
-                # for xxx in get_matching_strings(xx[0]):
-                    # if len(yy) + len(xxx) >= max_length:
-                        # continue
-                    # yield xxx + yy
-        # else:
-            # for u in get_matching_strings(my_rules[rule]):
-                # yield u
+# print("🍅", repr(rule))
+# if rule == '"a"':
+# yield "a"
+# elif rule == '"b"':
+# yield "b"
+# else:
+# if "|" in rule:
+# for variant in rule.split(' | '):
+# for x in get_matching_strings(variant):
+# yield x
+# elif " " in rule:
+# xx = rule.split(' ')
+# for yy in get_matching_strings(" ".join(xx[1:])):
+# if len(yy) >= max_length:
+# break
+# for xxx in get_matching_strings(xx[0]):
+# if len(yy) + len(xxx) >= max_length:
+# continue
+# yield xxx + yy
+# else:
+# for u in get_matching_strings(my_rules[rule]):
+# yield u
 
 
 # all_matching_strings = set(get_matching_strings(my_rules["0"]))
