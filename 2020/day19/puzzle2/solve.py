@@ -74,7 +74,6 @@ assert parse_number("153x") == (153, "x")
 def alt(*ps):
     def pp(x):
         for p in ps:
-            print("Trying alternative p")
             try:
                 return p()(x)
             except ValueError:
@@ -195,7 +194,7 @@ assert rul_alt_parse("2 3 | 3 2")[1] == ""
 
 string_rule_parser = map_(
     lambda p, r: (parse_regexp('^' + p[1]), r),
-    lambda: parse_regexp('^"[a-z]"'))
+    lambda: parse_regexp('^"[ab]"'))
 
 assert string_rule_parser('"a"')[1] == ""
 assert string_rule_parser('"b"')[1] == ""
@@ -227,18 +226,64 @@ for i, rule in rules.items():
 
 # assert rules[0][0]("aa")[1] == ""
 
-total_matching = 0
-for x in messages.split('\n')[0:-1]:
-    x = x.strip()
-    try:
-        _, r = rules[0][0](x)
-        if not r:
-            print(repr(x), "✅")
-            total_matching += 1
-        else:
-            print(repr(x), "❌", repr(r))
-    except ValueError as e:
-        print(e)
-        print(repr(x), "❌ (VE)")
+# total_matching = 0
+# for x in messages.split('\n')[0:-1]:
+    # x = x.strip()
+    # try:
+    # _, r = rules[0][0](x)
+    # if not r:
+    # print(repr(x), "✅")
+    # total_matching += 1
+    # else:
+    # print(repr(x), "❌", repr(r))
+    # except ValueError as e:
+    # print(e)
+    # print(repr(x), "❌ (VE)")
 
-print("Total matching", total_matching)
+# print("Total matching", total_matching)
+
+my_rules = {}
+
+for rule in raw_rules.split('\n'):
+    ruleid, rule = rule.strip().split(': ')
+    my_rules[ruleid] = rule
+
+my_rules["8"] = "42 | 42 42 | 42 42 42 | 42 42 42 42 | 42 42 42 42 42 | 42 42 42 42 42 42 | 42 42 42 42 42 42 42 | 42 42 42 42 42 42 42 42 | 42 42 42 42 42 42 42 42 42 | 42 42 42 42 42 42 42 42 42 42 | 42 42 42 42 42 42 42 42 42 42 42"
+my_rules["11"] = "42 31 | 42 42 31 31 | 42 42 42 31 31 31 | 42 42 42 42 31 31 31 31 | 42 42 42 42 42 31 31 31 31 31 | 42 42 42 42 42 42 31 31 31 31 31 31 | 42 42 42 42 42 42 42 31 31 31 31 31 31 31 | 42 42 42 42 42 42 42 42 31 31 31 31 31 31 31 31 | 42 42 42 42 42 42 42 42 42 31 31 31 31 31 31 31 31 31 | 42 42 42 42 42 42 42 42 42 42 31 31 31 31 31 31 31 31 31 31"
+
+
+def get_matching_strings(rule):
+    # print("🍅", repr(rule))
+    if rule == '"a"':
+        yield "a"
+    elif rule == '"b"':
+        yield "b"
+    else:
+        if "|" in rule:
+            for variant in rule.split(' | '):
+                for x in get_matching_strings(variant):
+                    yield x
+        elif " " in rule:
+            xx = rule.split(' ')
+            for yy in get_matching_strings(" ".join(xx[1:])):
+                for xxx in get_matching_strings(xx[0]):
+                    yield xxx + yy
+        else:
+            for u in get_matching_strings(my_rules[rule]):
+                yield u
+
+
+all_matching_strings = set(get_matching_strings(my_rules["0"]))
+
+print(all_matching_strings)
+
+msgs = set(messages.split("\n")[0:-2])
+
+print(msgs)
+
+matching_msg = msgs.intersection(all_matching_strings)
+
+print(matching_msg)
+
+
+print("Total matching", len(matching_msg))
